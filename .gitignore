@@ -1,0 +1,26 @@
+# Dependency directory and npm log
+node_modules
+npm-debug.log
+
+# Code coverage results
+/coverage
+
+# Built package
+/*.tgz
+
+# Project files
+.idea
+*.iml
+
+# Compiled client resources
+/public/stylesheets/
+/public/js/
+
+# Revision file
+config/_revision
+
+# OS X
+.DS_Store
+
+# The .env file is developer local and should never be checked in
+.env

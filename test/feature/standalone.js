@@ -1,11 +1,14 @@
 "use strict";
 var request = require("supertest");
-var exporter = require("../../index");
 
 Feature("stand alone usage", function () {
+  afterEach(function () {
+    delete require.cache[require.resolve("../../index")];
+  });
+
   Scenario("initialization without an Express app", function () {
     When("exporter has been initialized", function () {
-      exporter.init();
+      require("../../index").init();
     });
 
     Then("there should be an /metrics endpoint at localhost:9090", function (done) {
@@ -14,7 +17,7 @@ Feature("stand alone usage", function () {
         .expect(200)
         //.end(done);
         .end(function (err, res) {
-          console.log(res.body);
+          console.log(res.text);
           if (err) return done(err);
           done();
         });
@@ -23,7 +26,7 @@ Feature("stand alone usage", function () {
 
   Scenario("initialization without an Express app and custom port", function () {
     When("exporter has been initialized with 1442 as port", function () {
-      exporter.init({
+      require("../../index").init({
         port: 1442
       });
     });

@@ -1,9 +1,12 @@
 "use strict";
 var express = require("express");
 var request = require("supertest");
-var exporter = require("../../index");
 
 Feature("express endpoint", function () {
+  afterEach(function () {
+    delete require.cache[require.resolve("../../index")];
+  });
+
   Scenario("initialization with an Express app", function () {
     var app;
     Given("an Express app", function () {
@@ -11,7 +14,7 @@ Feature("express endpoint", function () {
     });
 
     When("exporter has been initialized with the Express app", function () {
-      exporter.init({
+      require("../../index").init({
         expressApp: app
       });
     });

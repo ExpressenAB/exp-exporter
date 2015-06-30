@@ -11,7 +11,9 @@ Feature("express endpoint", function () {
     });
 
     When("exporter has been initialized with the Express app", function () {
-      exporter.init(app);
+      exporter.init({
+        expressApp: app
+      });
     });
 
     Then("the app should have a /_metrics endpoint", function (done) {

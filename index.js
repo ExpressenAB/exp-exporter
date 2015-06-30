@@ -1,15 +1,17 @@
 "use strict";
-var http = require("http");
-function init(app) {
-  if (app) {
-    app.get("/_metrics", function (req, res) {
-      res.send({});
-    });
+var Prometheus = require("prometheus-client");
+var client = new Prometheus();
+var _ = require("lodash");
+
+function init(options) {
+  options = options || {};
+  options = _.defaults(options, {
+    port: 9090
+  });
+  if (options.expressApp) {
+    options.expressApp.get("/_metrics", client.metricsFunc());
   } else {
-    http.createServer(function (req, res) {
-      res.writeHead(200, {"Content-Type": "text/plain"});
-      res.end();
-    }).listen(1442);
+    client.listen(options.port);
   }
 }
 

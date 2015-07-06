@@ -2,18 +2,23 @@
 var request = require("supertest");
 
 Feature("stand alone usage", function () {
-  afterEach(function () {
+  afterEach(function (done) {
+    require("../../index").unInit();
     delete require.cache[require.resolve("../../index")];
+    setTimeout(done, 20);
   });
 
   Scenario("initialization without an Express app", function () {
-    When("exporter has been initialized", function () {
-      require("../../index").init();
+    When("exporter has been initialized", function (done) {
+      require("../../index").init({
+        writeInterval: 20
+      });
+      setTimeout(done, 100);
     });
 
-    Then("there should be an /metrics endpoint at localhost:9090", function (done) {
+    Then("there should be an /_metrics endpoint at localhost:9090", function (done) {
       request("http://localhost:9090")
-        .get("/metrics")
+        .get("/_metrics")
         .expect(200)
         //.end(done);
         .end(function (err, res) {
@@ -31,9 +36,9 @@ Feature("stand alone usage", function () {
       });
     });
 
-    Then("there should be an /metrics endpoint at localhost:1442", function (done) {
+    Then("there should be an /_metrics endpoint at localhost:1442", function (done) {
       request("http://localhost:1442")
-        .get("/metrics")
+        .get("/_metrics")
         .expect(200)
         .end(done);
     });

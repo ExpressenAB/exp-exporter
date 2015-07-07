@@ -9,6 +9,7 @@ var usage = require("usage");
 
 var numWorkers;
 var avgCpuPerWorker;
+var avgMemoryPerWorker;
 var config;
 var intervalObj;
 var server;
@@ -36,6 +37,7 @@ function init(options) {
   options.expressApp.get("/_metrics", gatherMetrics);
   numWorkers = client.newGauge({namespace: "nodejs", name: "num_workers", help: "Number of responding workers"});
   avgCpuPerWorker = client.newGauge({namespace: "nodejs", name: "avg_cpu_usage_per_worker", help: "Average CPU usage per worker"});
+  avgMemoryPerWorker = client.newGauge({namespace: "nodejs", name: "avg_mem_usage_per_worker", help: "Average memory usage per worker"});
   intervalObj = setInterval(writeMetrics, options.writeInterval);
 }
 
@@ -56,7 +58,8 @@ function writeMetrics() {
     var metrics = {
       workerPid: process.pid,
       timestamp: new Date().getTime(),
-      cpuUsage: result.cpu
+      cpuUsage: result.cpu,
+      memoryUsage: result.memory
     };
     fs.writeFile("/tmp/exp-exporter-applabel-" + process.pid, JSON.stringify(metrics));
   });
@@ -89,12 +92,20 @@ function gatherMetrics(req, res) {
           gatheredMetrics.push(file.data);
         }
       });
+      
+      numWorkers.set({app: config.appName}, gatheredMetrics.length, true, null);
+
       var cpuUsages = gatheredMetrics.map(function (workerMetrics) {
         return workerMetrics.cpuUsage;
       });
       var avgCpuUsage = _.sum(cpuUsages) / gatheredMetrics.length;
-      numWorkers.set({app: config.appName}, gatheredMetrics.length, true, null);
       avgCpuPerWorker.set({app: config.appName}, avgCpuUsage, true, null);
+
+      var memoryUsages = gatheredMetrics.map(function (workerMetrics) {
+        return workerMetrics.memoryUsage;
+      });
+      var avgMemoryUsage = _.sum(memoryUsages) / gatheredMetrics.length;
+      avgMemoryPerWorker.set({app: config.appName}, avgMemoryUsage, true, null);
       return client.metricsFunc()(req, res);
     });
   });

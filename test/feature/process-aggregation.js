@@ -46,5 +46,14 @@ Feature("process aggregation", function () {
       var expectedAverage = totalExpectedCpu / numProcesses;
       responseText.should.contain("nodejs_avg_cpu_usage_per_worker{app=\"the-app\"} " + expectedAverage);
     });
+
+    And("the response should contain average memory usage from all workers", function () {
+      var totalExpectedMemory = 0;
+      for(var i = 0; i < numProcesses; i++) {
+        totalExpectedMemory += (i+1) * 1000;
+      }
+      var expectedAverage = totalExpectedMemory / numProcesses;
+      responseText.should.contain("nodejs_avg_mem_usage_per_worker{app=\"the-app\"} " + expectedAverage);
+    });
   });
 });

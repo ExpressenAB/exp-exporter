@@ -1,9 +1,11 @@
 "use strict";
 var usage = require("usage");
+var processNumber = parseInt(process.argv[2]);
 
 usage.lookup = function (pid, options, callback) {
   callback(null, {
-    cpu: 10 + parseInt(process.argv[2])
+    memory: (processNumber+1)*1000,
+    cpu: 10 + processNumber
   });
 };
 

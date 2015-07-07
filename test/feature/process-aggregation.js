@@ -26,16 +26,25 @@ Feature("process aggregation", function () {
       request("http://localhost:9090")
       .get("/_metrics")
       .expect(200)
-        .end(function (err, res) {
-          responseText = res.text;
-          console.log(res.text);
-          if (err) return done(err);
-          done();
-        });
+      .end(function (err, res) {
+        responseText = res.text;
+        console.log(res.text);
+        if (err) return done(err);
+        done();
+      });
     });
 
     And("the response should say that there are " + numProcesses + " workers", function () {
       responseText.should.contain("nodejs_num_workers{app=\"the-app\"} " + numProcesses);
+    });
+
+    And("the response should contain average cpu usage from all workers", function () {
+      var totalExpectedCpu = 0;
+      for(var i = 0; i < numProcesses; i++) {
+        totalExpectedCpu += 10 + i;
+      }
+      var expectedAverage = totalExpectedCpu / numProcesses;
+      responseText.should.contain("nodejs_avg_cpu_usage_per_worker{app=\"the-app\"} " + expectedAverage);
     });
   });
 });

@@ -40,7 +40,7 @@ Feature("process aggregation", function () {
 
     And("the response should contain average cpu usage from all workers", function () {
       var totalExpectedCpu = 0;
-      for(var i = 0; i < numProcesses; i++) {
+      for (var i = 0; i < numProcesses; i++) {
         totalExpectedCpu += 10 + i;
       }
       var expectedAverage = totalExpectedCpu / numProcesses;
@@ -49,8 +49,8 @@ Feature("process aggregation", function () {
 
     And("the response should contain average memory usage from all workers", function () {
       var totalExpectedMemory = 0;
-      for(var i = 0; i < numProcesses; i++) {
-        totalExpectedMemory += (i+1) * 1000;
+      for (var i = 0; i < numProcesses; i++) {
+        totalExpectedMemory += (i + 1) * 1000;
       }
       var expectedAverage = totalExpectedMemory / numProcesses;
       responseText.should.contain("nodejs_avg_mem_usage_per_worker{app=\"the-app\"} " + expectedAverage);

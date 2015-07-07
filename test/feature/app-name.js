@@ -1,6 +1,5 @@
 "use strict";
 var request = require("supertest");
-var expect = require("chai").expect;
 
 Feature("configurable app name", function () {
   Scenario("initialization without an Express app with myapp as app name", function () {

@@ -4,7 +4,7 @@ var processNumber = parseInt(process.argv[2]);
 
 usage.lookup = function (pid, options, callback) {
   callback(null, {
-    memory: (processNumber+1)*1000,
+    memory: (processNumber + 1) * 1000,
     cpu: 10 + processNumber
   });
 };

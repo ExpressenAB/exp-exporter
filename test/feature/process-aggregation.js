@@ -35,7 +35,7 @@ Feature("process aggregation", function () {
     });
 
     And("the response should say that there are " + numProcesses + " workers", function () {
-      responseText.should.contain("ns_num_workers{app=\"applabel\"} " + numProcesses);
+      responseText.should.contain("nodejs_num_workers{app=\"the-app\"} " + numProcesses);
     });
   });
 });

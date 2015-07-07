@@ -9,9 +9,12 @@ var async = require("async");
 var numWorkers;
 var config;
 var intervalObj;
+var server;
 
 function init(options) {
-  options = options || {};
+  if(!options || !options.appName) {
+    throw new Error("You must supply an appName");
+  }
   options = _.defaults(options, {
     port: 9090,
     writeInterval: 10000
@@ -26,15 +29,22 @@ function init(options) {
       process.exit(1);
     });
     options.expressApp = express();
-    options.expressApp.listen(options.port);
+    server = options.expressApp.listen(options.port);
   }
   options.expressApp.get("/_metrics", gatherMetrics);
-  numWorkers = client.newGauge({namespace: "ns", name: "num_workers", help: "Number of responding workers"});
+  numWorkers = client.newGauge({namespace: "nodejs", name: "num_workers", help: "Number of responding workers"});
   intervalObj = setInterval(writeMetrics, options.writeInterval);
 }
 
 function unInit() {
   clearInterval(intervalObj);
+  if (server) {
+    server.close();
+  }
+}
+
+function filePrefix() {
+
 }
 
 function writeMetrics() {
@@ -71,7 +81,7 @@ function gatherMetrics(req, res) {
           gatheredMetrics.push(file.data);
         }
       });
-      numWorkers.set({app: "applabel"}, gatheredMetrics.length, true, null);
+      numWorkers.set({app: config.appName}, gatheredMetrics.length, true, null);
       return client.metricsFunc()(req, res);
     });
   });

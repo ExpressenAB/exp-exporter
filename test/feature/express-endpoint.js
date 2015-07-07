@@ -3,14 +3,14 @@ var express = require("express");
 var request = require("supertest");
 
 Feature("express endpoint", function () {
-  afterEach(function (done) {
-    require("../../index").unInit();
-    delete require.cache[require.resolve("../../index")];
-    setTimeout(done, 200);
-  });
-
   Scenario("initialization with an Express app", function () {
     var app;
+
+    after(function (done) {
+      require("../../index").unInit();
+      delete require.cache[require.resolve("../../index")];
+      setTimeout(done, 200);
+    });
 
     Given("an Express app", function () {
       app = express();
@@ -19,6 +19,7 @@ Feature("express endpoint", function () {
     When("exporter has been initialized with the Express app", function (done) {
       require("../../index").init({
         expressApp: app,
+        appName: "the-app",
         writeInterval: 20
       });
       setTimeout(done, 100);

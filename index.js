@@ -92,22 +92,26 @@ function gatherMetrics(req, res) {
         }
       });
 
-      numWorkers.set({app: config.appName}, gatheredMetrics.length, true, null);
-
-      var cpuUsages = gatheredMetrics.map(function (workerMetrics) {
-        return workerMetrics.cpuUsage;
-      });
-      var avgCpuUsage = _.sum(cpuUsages) / gatheredMetrics.length;
-      avgCpuPerWorker.set({app: config.appName}, avgCpuUsage, true, null);
-
-      var memoryUsages = gatheredMetrics.map(function (workerMetrics) {
-        return workerMetrics.memoryUsage;
-      });
-      var avgMemoryUsage = _.sum(memoryUsages) / gatheredMetrics.length;
-      avgMemoryPerWorker.set({app: config.appName}, avgMemoryUsage, true, null);
+      updateMetrics(gatheredMetrics);
       return client.metricsFunc()(req, res);
     });
   });
+}
+
+function updateMetrics(gatheredMetrics) {
+  numWorkers.set({app: config.appName}, gatheredMetrics.length, true, null);
+
+  var cpuUsages = gatheredMetrics.map(function (workerMetrics) {
+    return workerMetrics.cpuUsage;
+  });
+  var avgCpuUsage = _.sum(cpuUsages) / gatheredMetrics.length;
+  avgCpuPerWorker.set({app: config.appName}, avgCpuUsage, true, null);
+
+  var memoryUsages = gatheredMetrics.map(function (workerMetrics) {
+    return workerMetrics.memoryUsage;
+  });
+  var avgMemoryUsage = _.sum(memoryUsages) / gatheredMetrics.length;
+  avgMemoryPerWorker.set({app: config.appName}, avgMemoryUsage, true, null);
 }
 
 module.exports = {

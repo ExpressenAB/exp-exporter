@@ -2,6 +2,7 @@
 var request = require("supertest");
 
 Feature("stand alone usage", function () {
+  var exporter;
   Scenario("initialization without an Express app", function () {
     after(function (done) {
       require("../../index").unInit();
@@ -9,11 +10,11 @@ Feature("stand alone usage", function () {
       setTimeout(done, 20);
     });
     When("exporter has been initialized", function (done) {
-      require("../../index").init({
+      exporter = require("../../index").init({
         appName: "the-app",
         writeInterval: 20
       });
-      setTimeout(done, 100);
+      exporter.once("metricsWritten", function () { done(); });
     });
 
     Then("there should be an /_metrics endpoint at localhost:9090", function (done) {
@@ -31,7 +32,7 @@ Feature("stand alone usage", function () {
       setTimeout(done, 20);
     });
     When("exporter has been initialized with 1442 as port", function () {
-      require("../../index").init({
+      exporter = require("../../index").init({
         appName: "the-app",
         port: 1442
       });

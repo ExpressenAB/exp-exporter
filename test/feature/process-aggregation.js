@@ -1,24 +1,37 @@
 "use strict";
 var request = require("supertest");
 var process = require("child_process");
+var _ = require("lodash");
 
 Feature("process aggregation", function () {
 
   Scenario("multiple processes", function () {
-    var numProcesses = 1 + Math.floor((Math.random() * 3) + 1);
+    var numProcesses = 4;//1 + Math.floor((Math.random() * 3) + 1);
     var processes = [];
     after(function (done) {
       processes.forEach(function (child) {
         child.kill();
       });
-      setTimeout(done, 50);
+      setTimeout(done, 100);
     });
     When("exporter has been initialized from within multiple processes", function (done) {
+      var running = {};
+      function storeAsRunning(processNumber) {
+        running[processNumber.toString()] = true;
+      }
       for (var i = 0; i < numProcesses; i++) {
         var ls = process.fork("./test_samples/process-sample.js", [i], {});
+        ls.on("message", storeAsRunning);
         processes.push(ls);
       }
-      setTimeout(done, 600);
+      function awaitAllRunning() {
+        if (_.keys(running).length === numProcesses) {
+          done();
+        } else {
+          setTimeout(awaitAllRunning, 10);
+        }
+      }
+      awaitAllRunning();
     });
 
     var responseText;

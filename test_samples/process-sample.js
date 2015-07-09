@@ -9,7 +9,11 @@ usage.lookup = function (pid, options, callback) {
   });
 };
 
-require("../index").init({
+var exporter = require("../index").init({
   appName: "the-app",
-  writeInterval: 20
+  writeInterval: 100
+});
+
+exporter.once("metricsWritten", function () {
+  process.send(processNumber);
 });

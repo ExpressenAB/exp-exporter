@@ -1,19 +1,18 @@
 "use strict";
-var Prometheus = require("prometheus-client");
-var client = new Prometheus();
 var _ = require("lodash");
 var express = require("express");
 var fs = require("fs");
 var async = require("async");
 var usage = require("usage");
 var util = require("util");
+var prometheusResponse = require("./prometheusResponse");
+var events = require("events");
 
-var numWorkers;
-var avgCpuPerWorker;
-var avgMemoryPerWorker;
 var config;
 var intervalObj;
 var server;
+var numRequestsServedByProcess = 0;
+var emitter;
 
 function init(options) {
   if (!options || !options.appName) {
@@ -34,11 +33,14 @@ function init(options) {
     options.expressApp = express();
     server = options.expressApp.listen(options.port);
   }
+  options.expressApp.use(function (req, res, next) {
+    numRequestsServedByProcess++;
+    next();
+  });
   options.expressApp.get("/_metrics", gatherMetrics);
-  numWorkers = client.newGauge({namespace: "nodejs", name: "num_workers", help: "Number of responding workers"});
-  avgCpuPerWorker = client.newGauge({namespace: "nodejs", name: "avg_cpu_usage_per_worker", help: "Average CPU usage per worker"});
-  avgMemoryPerWorker = client.newGauge({namespace: "nodejs", name: "avg_mem_usage_per_worker", help: "Average memory usage per worker"});
   intervalObj = setInterval(writeMetrics, options.writeInterval);
+  emitter = new events.EventEmitter();
+  return emitter;
 }
 
 function unInit() {
@@ -59,9 +61,15 @@ function writeMetrics() {
       workerPid: process.pid,
       timestamp: new Date().getTime(),
       cpuUsage: result.cpu,
-      memoryUsage: result.memory
+      memoryUsage: result.memory,
+      totalHttpRequestsServed: numRequestsServedByProcess
     };
-    fs.writeFile("/tmp/" + filePrefix() + process.pid, JSON.stringify(metrics));
+    fs.writeFile("/tmp/" + filePrefix() + process.pid, JSON.stringify(metrics), function (err) {
+      if (err) {
+        return;
+      }
+      emitter.emit("metricsWritten", metrics);
+    });
   });
 }
 
@@ -86,32 +94,75 @@ function gatherMetrics(req, res) {
       }
       _.each(results, function (file) {
         if (!file.data.timestamp || file.data.timestamp < new Date(new Date().getTime() - config.writeInterval).getTime()) {
+          //The file hasn't been updated during the interval. It probably belongs to a dead process, discard.
           fs.unlink(file.path);
         } else {
           gatheredMetrics.push(file.data);
         }
       });
-
-      updateMetrics(gatheredMetrics);
-      return client.metricsFunc()(req, res);
+      return prometheusResponse.respond(getPrometheusMetrics(gatheredMetrics), res);
     });
   });
 }
 
-function updateMetrics(gatheredMetrics) {
-  numWorkers.set({app: config.appName}, gatheredMetrics.length, true, null);
+function getPrometheusMetrics(gatheredMetrics) {
+  var promMetrics = [];
+  promMetrics.push(prometheusResponse.gauge(
+  {
+    namespace: "nodejs",
+    name: "num_workers",
+    help: "Number of responding workers"
+  },
+  [{
+    labels: {app: config.appName},
+    value: gatheredMetrics.length
+  }]));
 
   var cpuUsages = gatheredMetrics.map(function (workerMetrics) {
     return workerMetrics.cpuUsage;
   });
   var avgCpuUsage = _.sum(cpuUsages) / gatheredMetrics.length;
-  avgCpuPerWorker.set({app: config.appName}, avgCpuUsage, true, null);
+  promMetrics.push(prometheusResponse.gauge(
+  {
+    namespace: "nodejs",
+    name: "avg_cpu_usage_per_worker",
+    help: "Average CPU usage per worker"
+  },
+  [{
+    labels: {app: config.appName},
+    value: avgCpuUsage
+  }]));
 
   var memoryUsages = gatheredMetrics.map(function (workerMetrics) {
     return workerMetrics.memoryUsage;
   });
   var avgMemoryUsage = _.sum(memoryUsages) / gatheredMetrics.length;
-  avgMemoryPerWorker.set({app: config.appName}, avgMemoryUsage, true, null);
+  promMetrics.push(prometheusResponse.gauge(
+  {
+    namespace: "nodejs",
+    name: "avg_mem_usage_per_worker",
+    help: "Average memory usage per worker"
+  },
+  [{
+    labels: {app: config.appName},
+    value: avgMemoryUsage
+  }]));
+
+  var servedHttpRequests = gatheredMetrics.map(function (workerMetrics) {
+    return workerMetrics.totalHttpRequestsServed;
+  });
+  var totalServedHttpRequests = _.sum(servedHttpRequests);
+  promMetrics.push(prometheusResponse.gauge(
+  {
+    namespace: "nodejs",
+    name: "http_requests",
+    help: "Total HTTP requests served"
+  },
+  [{
+    labels: {app: config.appName},
+    value: totalServedHttpRequests
+  }]));
+  return promMetrics;
 }
 
 module.exports = {

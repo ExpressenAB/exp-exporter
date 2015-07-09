@@ -23,7 +23,6 @@
   "license": "proprietary",
   "private": true,
   "dependencies": {
-    "prometheus-client": "~0.1.0",
     "lodash": "~3.9.3",
     "usage": "~0.7.0"
   },

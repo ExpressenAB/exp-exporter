@@ -156,7 +156,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     return workerMetrics.totalHttpRequestsServed;
   });
   var totalServedHttpRequests = _.sum(servedHttpRequests);
-  promMetrics.push(prometheusResponse.gauge(
+  promMetrics.push(prometheusResponse.counter(
   {
     namespace: "nodejs",
     name: "http_requests",

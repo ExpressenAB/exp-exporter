@@ -12,6 +12,7 @@ var config;
 var intervalObj;
 var server;
 var numRequestsServedByProcess = 0;
+var numRequestsServedSinceLastWrite = 0;
 var emitter;
 
 function init(options) {
@@ -35,6 +36,7 @@ function init(options) {
   }
   options.expressApp.use(function (req, res, next) {
     numRequestsServedByProcess++;
+    numRequestsServedSinceLastWrite++;
     next();
   });
   options.expressApp.get("/_metrics", gatherMetrics);
@@ -62,8 +64,10 @@ function writeMetrics() {
       timestamp: new Date().getTime(),
       cpuUsage: result.cpu,
       memoryUsage: result.memory,
-      totalHttpRequestsServed: numRequestsServedByProcess
+      totalHttpRequestsServed: numRequestsServedByProcess,
+      httpRequestsServedPerSecond: numRequestsServedSinceLastWrite * 1000 / config.writeInterval
     };
+    numRequestsServedSinceLastWrite = 0;
     fs.writeFile("/tmp/" + filePrefix() + process.pid, JSON.stringify(metrics), function (err) {
       if (err) {
         return;
@@ -161,6 +165,21 @@ function getPrometheusMetrics(gatheredMetrics) {
   [{
     labels: {app: config.appName},
     value: totalServedHttpRequests
+  }]));
+
+  var perSecondServedHttpRequests = gatheredMetrics.map(function (workerMetrics) {
+    return workerMetrics.httpRequestsServedPerSecond;
+  });
+  var totalHttpRequestsPerSecond = _.sum(perSecondServedHttpRequests);
+  promMetrics.push(prometheusResponse.gauge(
+  {
+    namespace: "nodejs",
+    name: "nodejs_avg_http_requests_per_second",
+    help: "HTTP requests served per second"
+  },
+  [{
+    labels: {app: config.appName},
+    value: totalHttpRequestsPerSecond
   }]));
   return promMetrics;
 }

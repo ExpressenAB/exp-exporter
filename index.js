@@ -21,9 +21,11 @@ function init(options) {
   }
   options = _.defaults(options, {
     port: 9090,
-    writeInterval: 10000
+    writeInterval: 10000,
+    basePath: "/tmp/"
   });
   config = options;
+  ensurePath();
   if (!options.expressApp) {
     process.on("uncaughtException", function (err) {
       if (err.code === "EADDRINUSE" && err.stack.indexOf("exp-exporter") > -1) {
@@ -35,6 +37,7 @@ function init(options) {
     server = options.expressApp.listen(options.port);
   }
   options.expressApp.use(function (req, res, next) {
+    //req.on("end", function () { console.log("ENDED!!"); console.log(res.statusCode); });
     numRequestsServedByProcess++;
     numRequestsServedSinceLastWrite++;
     next();
@@ -49,6 +52,20 @@ function unInit() {
   clearInterval(intervalObj);
   if (server) {
     server.close();
+  }
+}
+
+function getPath() {
+  var basePath = config.basePath;
+  if (basePath[basePath.length - 1] !== "/") {
+    basePath += "/";
+  }
+  return config.basePath + config.appName + "/";
+}
+
+function ensurePath() {
+  if (!fs.existsSync(getPath())) {
+    fs.mkdirSync(getPath());
   }
 }
 
@@ -68,7 +85,7 @@ function writeMetrics() {
       httpRequestsServedPerSecond: numRequestsServedSinceLastWrite * 1000 / config.writeInterval
     };
     numRequestsServedSinceLastWrite = 0;
-    fs.writeFile("/tmp/" + filePrefix() + process.pid, JSON.stringify(metrics), function (err) {
+    fs.writeFile(getPath() + filePrefix() + process.pid, JSON.stringify(metrics), function (err) {
       if (err) {
         return;
       }
@@ -79,18 +96,18 @@ function writeMetrics() {
 
 function gatherMetrics(req, res) {
   var gatheredMetrics = [];
-  fs.readdir("/tmp/", function (err, files) {
+  fs.readdir(getPath(), function (err, files) {
     files = _.filter(files, function (file) {
       return file.indexOf(filePrefix()) === 0;
     });
     async.map(files, function (file, cb) {
-      fs.readFile("/tmp/" + file, "utf8", function (err, data) {
+      fs.readFile(getPath() + file, "utf8", function (err, data) {
         try {
           data = JSON.parse(data);
         } catch (ex) {
           data = {};
         }
-        cb(err, { path: "/tmp/" + file, data: data });
+        cb(err, { path: getPath() + file, data: data });
       });
     }, function (err, results) {
       if (err) {

@@ -6,7 +6,7 @@ var _ = require("lodash");
 Feature("process aggregation", function () {
 
   Scenario("multiple processes", function () {
-    var numProcesses = 4;//1 + Math.floor((Math.random() * 3) + 1);
+    var numProcesses = 1 + Math.floor((Math.random() * 3) + 1);
     var processes = [];
     after(function (done) {
       processes.forEach(function (child) {

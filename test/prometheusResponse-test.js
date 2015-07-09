@@ -47,7 +47,7 @@ describe("prometheusResponse", function () {
       counter.should.eql("# HELP nodejs_mycounter A great counter\n# TYPE nodejs_mycounter counter\nnodejs_mycounter{app=\"applabel\",mylabel=\"first\"} 10.5\nnodejs_mycounter{app=\"applabel\",mylabel=\"second\"} 42.4242");
     });
   });
-  describe(".respond, when writing a gauge and a counter", function () {
+  describe(".respond(), when writing a gauge and a counter", function () {
     var gauge = prometheusResponse.gauge({namespace: "nodejs", name: "mygauge", help: "A great gauge"}, [{ labels: {app: "applabel"}, value: 10.5 }]);
     var counter = prometheusResponse.counter({namespace: "nodejs", name: "mycounter", help: "A great counter"}, [{ labels: {app: "applabel"}, value: 42 }]);
     it("should write it as expected", function () {

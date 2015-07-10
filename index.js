@@ -37,7 +37,6 @@ function init(options) {
     server = options.expressApp.listen(options.port);
   }
   options.expressApp.use(function (req, res, next) {
-    //req.on("end", function () { console.log("ENDED!!"); console.log(res.statusCode); });
     numRequestsServedByProcess++;
     numRequestsServedSinceLastWrite++;
     next();

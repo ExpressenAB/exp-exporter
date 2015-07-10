@@ -1,6 +1,6 @@
 {
   "name": "exp-exporter",
-  "version": "0.0.4",
+  "version": "0.0.6",
   "description": "Highly experimental Prometheus exporter",
   "main": "index.js",
   "homepage": "https://github.com/ExpressenAB/exp-exporter",
@@ -44,6 +44,7 @@
   "files": [
     "index.js",
     "prometheusResponse.js",
+    "lib",
     ".nvmrc"
   ]
 }

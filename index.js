@@ -159,6 +159,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     return workerMetrics.cpuUsage;
   });
   var avgCpuUsage = _.sum(cpuUsages) / gatheredMetrics.length;
+  avgCpuUsage = Math.round(avgCpuUsage * 1000) / 1000;
   promMetrics.push(prometheusResponse.gauge(
   {
     namespace: "nodejs",
@@ -189,6 +190,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     return workerMetrics.totalHttpRequestsServed;
   });
   var totalServedHttpRequests = _.sum(servedHttpRequests);
+  totalServedHttpRequests = Math.round(totalServedHttpRequests * 1000) / 1000;
   promMetrics.push(prometheusResponse.counter(
   {
     namespace: "nodejs",

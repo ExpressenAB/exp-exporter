@@ -7,6 +7,7 @@ var usage = require("usage");
 var util = require("util");
 var prometheusResponse = require("./prometheusResponse");
 var events = require("events");
+var dummyLogger = require("./lib/dummyLogger");
 
 var config;
 var intervalObj;
@@ -14,8 +15,11 @@ var server;
 var numRequestsServedByProcess = 0;
 var numRequestsServedSinceLastWrite = 0;
 var emitter;
+var logger;
 
 function init(options) {
+  logger = options.logger || dummyLogger();
+  logger.debug("exp-exporter starting");
   if (!options || !options.appName) {
     throw new Error("You must supply an appName");
   }
@@ -25,7 +29,13 @@ function init(options) {
     basePath: "/tmp/"
   });
   config = options;
-  ensurePath();
+  emitter = new events.EventEmitter();
+  try {
+    ensurePath();
+  } catch (ex) {
+    return emitter;
+  }
+
   if (!options.expressApp) {
     process.on("uncaughtException", function (err) {
       if (err.code === "EADDRINUSE" && err.stack.indexOf("exp-exporter") > -1) {
@@ -43,7 +53,7 @@ function init(options) {
   });
   options.expressApp.get("/_metrics", gatherMetrics);
   intervalObj = setInterval(writeMetrics, options.writeInterval);
-  emitter = new events.EventEmitter();
+
   return emitter;
 }
 
@@ -63,8 +73,14 @@ function getPath() {
 }
 
 function ensurePath() {
-  if (!fs.existsSync(getPath())) {
-    fs.mkdirSync(getPath());
+  var path = getPath();
+  if (!fs.existsSync(path)) {
+    try {
+      fs.mkdirSync(path);
+    } catch (ex) {
+      logger.error("Unable to create path %s", path);
+      throw ex;
+    }
   }
 }
 
@@ -73,6 +89,7 @@ function filePrefix() {
 }
 
 function writeMetrics() {
+  logger.info("exp-exporter writing metrics");
   usage.lookup(process.pid, { keepHistory: true }, function (err, result) {
 
     var metrics = {

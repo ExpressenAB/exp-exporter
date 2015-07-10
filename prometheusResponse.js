@@ -44,7 +44,7 @@ function respond(metrics, res) {
   res.writeHead(200, {
     "content-type": "text/plain; version=0.0.4"
   });
-  res.write(metrics.join("\n"));
+  res.write(metrics.join("\n") + "\n");
   return res.end();
 }
 

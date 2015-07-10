@@ -55,7 +55,7 @@ describe("prometheusResponse", function () {
       res.writeHead = function () {};
       res.end = function () {};
       res.write = function (text) {
-        text.should.eql("# HELP nodejs_mygauge A great gauge\n# TYPE nodejs_mygauge gauge\nnodejs_mygauge{app=\"applabel\"} 10.5\n# HELP nodejs_mycounter A great counter\n# TYPE nodejs_mycounter counter\nnodejs_mycounter{app=\"applabel\"} 42");
+        text.should.eql("# HELP nodejs_mygauge A great gauge\n# TYPE nodejs_mygauge gauge\nnodejs_mygauge{app=\"applabel\"} 10.5\n# HELP nodejs_mycounter A great counter\n# TYPE nodejs_mycounter counter\nnodejs_mycounter{app=\"applabel\"} 42\n");
       };
       prometheusResponse.respond([gauge, counter], res);
     });

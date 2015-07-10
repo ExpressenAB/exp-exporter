@@ -18,12 +18,13 @@ Feature("per second values", function () {
       app = express();
     });
 
-    When("exporter has been initialized with the Express app", function () {
+    When("exporter has been initialized with the Express app", function (done) {
       exporter = require("../../index").init({
         expressApp: app,
         appName: "the-app",
         writeInterval: 100
       });
+      exporter.once("metricsWritten", function () { done(); });
     });
 
     And("having made 10 requests to the app", function (done) {

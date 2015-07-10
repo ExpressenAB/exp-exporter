@@ -12,6 +12,7 @@ var dummyLogger = require("./lib/dummyLogger");
 var config;
 var intervalObj;
 var server;
+var initTime;
 var numRequestsServedByProcess = 0;
 var numRequestsServedSinceLastWrite = 0;
 var emitter;
@@ -19,6 +20,7 @@ var logger;
 
 function init(options) {
   logger = options.logger || dummyLogger();
+  initTime = new Date().getTime();
   logger.debug("exp-exporter starting");
   if (!options || !options.appName) {
     throw new Error("You must supply an appName");
@@ -35,6 +37,8 @@ function init(options) {
   } catch (ex) {
     return emitter;
   }
+
+  writeMetrics(); //Write a first set of metrics right away before letting setInterval take over
 
   if (!options.expressApp) {
     process.on("uncaughtException", function (err) {
@@ -53,7 +57,6 @@ function init(options) {
   });
   options.expressApp.get("/_metrics", gatherMetrics);
   intervalObj = setInterval(writeMetrics, options.writeInterval);
-
   return emitter;
 }
 
@@ -130,7 +133,12 @@ function gatherMetrics(req, res) {
         return res.status(500).send(err);
       }
       _.each(results, function (file) {
-        if (!file.data.timestamp || file.data.timestamp < new Date(new Date().getTime() - config.writeInterval).getTime()) {
+        var minAge = new Date(new Date().getTime() - config.writeInterval).getTime();
+        if (initTime > minAge) {
+          //App has recently started, we don't want files created prior to starting
+          minAge = initTime;
+        }
+        if (!file.data.timestamp || file.data.timestamp < minAge) {
           //The file hasn't been updated during the interval. It probably belongs to a dead process, discard.
           fs.unlink(file.path);
         } else {

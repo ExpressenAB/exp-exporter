@@ -1,6 +1,6 @@
 "use strict";
 
-var prometheusResponse = require("../prometheusResponse");
+var prometheusResponse = require("../lib/prometheusResponse");
 
 describe("prometheusResponse", function () {
   describe(".gauge() should return a valid gauge string", function () {

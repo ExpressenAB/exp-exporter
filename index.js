@@ -5,7 +5,7 @@ var fs = require("fs");
 var async = require("async");
 var usage = require("usage");
 var util = require("util");
-var prometheusResponse = require("./prometheusResponse");
+var prometheusResponse = require("./lib/prometheusResponse");
 var events = require("events");
 var dummyLogger = require("./lib/dummyLogger");
 

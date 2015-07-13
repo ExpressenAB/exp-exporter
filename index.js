@@ -32,7 +32,7 @@ function init(options) {
     writeInterval: 10000,
     basePath: "/tmp/"
   });
-  options.globalLabels = {app: options.appName};
+  options.globalLabels = {app: options.appName}; //TODO: should be configurable
   config = options;
   emitter = new events.EventEmitter();
   try {
@@ -40,12 +40,6 @@ function init(options) {
   } catch (ex) {
     return emitter;
   }
-
-  //Set up default metrics
-  // counter("http_requests");
-  // perSecondGauge("http_requests");
-  // gauge("avg_cpu_usage_per_worker");
-  // gauge("avg_mem_usage_per_worker");
 
   writeMetrics(); //Write a first set of metrics right away before letting setInterval take over
 
@@ -241,15 +235,11 @@ function getPrometheusMetrics(gatheredMetrics) {
   return promMetrics;
 }
 
-// function perSecondGauge(name) {
-//   perSecondGauges[name] = 0;
-// }
-
 function incrementPerSecondGauge(name, labels, help) {
   if (!labels) {
     labels = {};
   }
-  labels = _.defaults(labels, {app: config.appName}); //TODO: Should be config.defaultLabels
+  labels = _.defaults(labels, config.globalLabels);
   var key = metricKey(name, labels);
   if (perSecondGauges[key]) {
     perSecondGauges[key].value++;
@@ -262,10 +252,6 @@ function incrementPerSecondGauge(name, labels, help) {
     };
   }
 }
-
-// function gauge(name) {
-//   gauges[name] = 0;
-// }
 
 function setGauge(name, value, labels, help) {
   if (!labels) {
@@ -284,10 +270,6 @@ function setGauge(name, value, labels, help) {
     };
   }
 }
-
-// function counter(name) {
-//   counters[name] = 0;
-// }
 
 function incrementCounter(name, labels, help) {
   if (!labels) {
@@ -328,11 +310,8 @@ function metricKey(name, labels) {
 module.exports = {
   init: init,
   unInit: unInit,
-  //perSecondGauge: perSecondGauge,
   incrementPerSecondGauge: incrementPerSecondGauge,
-  //gauge: gauge,
   setGauge: setGauge,
-  //counter: counter,
   incrementCounter: incrementCounter,
   setCounter: setCounter
 };

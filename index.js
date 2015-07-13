@@ -13,7 +13,6 @@ var config;
 var intervalObj;
 var server;
 var initTime;
-var numRequestsServedByProcess = 0;
 var emitter;
 var logger;
 var gauges = {};
@@ -41,6 +40,7 @@ function init(options) {
   }
 
   //Set up default metrics
+  counter("http_requests");
   perSecondGauge("http_requests");
   gauge("avg_cpu_usage_per_worker");
   gauge("avg_mem_usage_per_worker");
@@ -58,7 +58,7 @@ function init(options) {
     server = options.expressApp.listen(options.port);
   }
   options.expressApp.use(function (req, res, next) {
-    numRequestsServedByProcess++;
+    incrementCounter("http_requests");
     incrementPerSecondGauge("http_requests");
     next();
   });
@@ -106,8 +106,8 @@ function writeMetrics() {
     setGauge("avg_mem_usage_per_worker", result.memory);
     var metrics = {
       workerPid: process.pid,
-      timestamp: new Date().getTime(),
-      totalHttpRequestsServed: numRequestsServedByProcess,
+      timestamp: new Date().getTime()//,
+      //totalHttpRequestsServed: numRequestsServedByProcess,
     };
 
     var gaugeKeys = _.keys(gauges);
@@ -182,22 +182,6 @@ function getPrometheusMetrics(gatheredMetrics) {
   [{
     labels: {app: config.appName},
     value: gatheredMetrics.length
-  }]));
-
-  var servedHttpRequests = gatheredMetrics.map(function (workerMetrics) {
-    return workerMetrics.totalHttpRequestsServed;
-  });
-  var totalServedHttpRequests = _.sum(servedHttpRequests);
-  totalServedHttpRequests = Math.round(totalServedHttpRequests * 1000) / 1000;
-  promMetrics.push(prometheusResponse.counter(
-  {
-    namespace: "nodejs",
-    name: "http_requests",
-    help: "Total HTTP requests served"
-  },
-  [{
-    labels: {app: config.appName},
-    value: totalServedHttpRequests
   }]));
 
   var gaugeKeys = _.keys(gauges);

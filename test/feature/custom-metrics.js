@@ -17,11 +17,7 @@ Feature("custom per second gauges", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("a perSecondGauge named 'transactions' has been added", function () {
-      require("../../index").perSecondGauge("transactions");
-    });
-
-    And("10 'transactions' have been logged", function () {
+    And("incrementPerSecondGauge('transactions') has been called 10 times", function () {
       for (var i = 0; i < 10; i++) {
         require("../../index").incrementPerSecondGauge("transactions");
       }
@@ -66,11 +62,7 @@ Feature("custom gagues with setting of value", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("a gauge named 'logged_in_users' has been added", function () {
-      require("../../index").gauge("logged_in_users");
-    });
-
-    And("the value for 'logged_in_users' has been set to 4242", function (done) {
+    And("setGauge('logged_in_users', 4242) has been called", function (done) {
       require("../../index").setGauge("logged_in_users", 4242);
       exporter.once("metricsWritten", function () { done(); });
     });
@@ -110,11 +102,7 @@ Feature("custom counter using incrementCounter", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("a counter named 'logins' has been added", function () {
-      require("../../index").counter("logins");
-    });
-
-    And("the 'logins' counter has been incremented 5 times", function (done) {
+    And("incrementCounter('logins') has been incremented 5 times", function (done) {
       for (var i = 0; i < 5; i++) {
         require("../../index").incrementCounter("logins");
       }
@@ -156,11 +144,7 @@ Feature("custom counter using setCounter", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("a counter named 'logins' has been added", function () {
-      require("../../index").counter("logins");
-    });
-
-    And("the 'logins' counter has been set to 42", function (done) {
+    And("setCounter('logins', 42) has benn called", function (done) {
       require("../../index").setCounter("logins", 42);
       exporter.once("metricsWritten", function () { done(); });
     });

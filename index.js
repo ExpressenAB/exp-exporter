@@ -40,10 +40,10 @@ function init(options) {
   }
 
   //Set up default metrics
-  counter("http_requests");
-  perSecondGauge("http_requests");
-  gauge("avg_cpu_usage_per_worker");
-  gauge("avg_mem_usage_per_worker");
+  // counter("http_requests");
+  // perSecondGauge("http_requests");
+  // gauge("avg_cpu_usage_per_worker");
+  // gauge("avg_mem_usage_per_worker");
 
   writeMetrics(); //Write a first set of metrics right away before letting setInterval take over
 
@@ -106,8 +106,7 @@ function writeMetrics() {
     setGauge("avg_mem_usage_per_worker", result.memory);
     var metrics = {
       workerPid: process.pid,
-      timestamp: new Date().getTime()//,
-      //totalHttpRequestsServed: numRequestsServedByProcess,
+      timestamp: new Date().getTime()
     };
 
     var gaugeKeys = _.keys(gauges);
@@ -245,7 +244,11 @@ function perSecondGauge(name) {
 }
 
 function incrementPerSecondGauge(name) {
-  perSecondGauges[name]++;
+  if (perSecondGauges[name]) {
+    perSecondGauges[name]++;
+  } else {
+    perSecondGauges[name] = 1;
+  }
 }
 
 function gauge(name) {
@@ -261,7 +264,11 @@ function counter(name) {
 }
 
 function incrementCounter(name) {
-  counters[name]++;
+  if (counters[name]) {
+    counters[name]++;
+  } else {
+    counters[name] = 1;
+  }
 }
 
 function setCounter(name, value) {

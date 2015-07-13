@@ -1,7 +1,7 @@
 "use strict";
 var request = require("supertest");
 
-Feature("custom per second gauges", function () {
+Feature("custom per second gauges with help text", function () {
   var exporter;
   Scenario("transactions per second gauge", function () {
     after(function (done) {
@@ -17,9 +17,9 @@ Feature("custom per second gauges", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("incrementPerSecondGauge('transactions') has been called 10 times", function () {
+    And("incrementPerSecondGauge('transactions', null, 'my help text') has been called 10 times", function () {
       for (var i = 0; i < 10; i++) {
-        require("../../index").incrementPerSecondGauge("transactions");
+        require("../../index").incrementPerSecondGauge("transactions", null, "my help text");
       }
     });
 
@@ -41,6 +41,10 @@ Feature("custom per second gauges", function () {
 
     Then("it should say that there has been 100 transactions/second", function () {
       responseText.should.contain("nodejs_avg_transactions_per_second{app=\"the-app\"} 100");
+    });
+
+    And("the response should contain the help text", function () {
+      responseText.should.contain("my help text");
     });
   });
 });
@@ -99,7 +103,7 @@ Feature("custom per second gauges with custom labels", function () {
   });
 });
 
-Feature("custom gagues with setting of value", function () {
+Feature("custom gagues with setting of value and help text", function () {
   var exporter;
   Scenario("currently logged in users gauge", function () {
     after(function (done) {
@@ -116,8 +120,8 @@ Feature("custom gagues with setting of value", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("setGauge('logged_in_users', 4242) has been called", function (done) {
-      require("../../index").setGauge("logged_in_users", 4242);
+    And("setGauge('logged_in_users', 4242, null, 'my help text') has been called", function (done) {
+      require("../../index").setGauge("logged_in_users", 4242, null, "my help text");
       exporter.once("metricsWritten", function () { done(); });
     });
 
@@ -135,6 +139,10 @@ Feature("custom gagues with setting of value", function () {
 
     Then("it should say that there are 4242 logged in users", function () {
       responseText.should.contain("nodejs_logged_in_users{app=\"the-app\"} 4242");
+    });
+
+    And("the response should contain the help text", function () {
+      responseText.should.contain("my help text");
     });
   });
 });
@@ -188,7 +196,7 @@ Feature("custom gagues with custom labels with setting of value", function () {
   });
 });
 
-Feature("custom counter using incrementCounter", function () {
+Feature("custom counter using incrementCounter and help text", function () {
   var exporter;
   Scenario("counting log-ins", function () {
     after(function (done) {
@@ -205,9 +213,9 @@ Feature("custom counter using incrementCounter", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("incrementCounter('logins') has been incremented 5 times", function (done) {
+    And("incrementCounter('logins', null, 'my help text') has been incremented 5 times", function (done) {
       for (var i = 0; i < 5; i++) {
-        require("../../index").incrementCounter("logins");
+        require("../../index").incrementCounter("logins", null, "my help text");
       }
       exporter.once("metricsWritten", function () { done(); });
     });
@@ -226,6 +234,10 @@ Feature("custom counter using incrementCounter", function () {
 
     Then("it should say that there have been 5 log-ins", function () {
       responseText.should.contain("nodejs_logins{app=\"the-app\"} 5");
+    });
+
+    And("the response should contain the help text", function () {
+      responseText.should.contain("my help text");
     });
   });
 });
@@ -247,8 +259,8 @@ Feature("custom counter using setCounter", function () {
       exporter.once("metricsWritten", function () { done(); });
     });
 
-    And("setCounter('logins', 42) has benn called", function (done) {
-      require("../../index").setCounter("logins", 42);
+    And("setCounter('logins', 42, null, 'my help text') has benn called", function (done) {
+      require("../../index").setCounter("logins", 42, null, "my help text");
       exporter.once("metricsWritten", function () { done(); });
     });
 
@@ -266,6 +278,10 @@ Feature("custom counter using setCounter", function () {
 
     Then("it should say that there have been 42 log-ins", function () {
       responseText.should.contain("nodejs_logins{app=\"the-app\"} 42");
+    });
+
+    And("the response should contain the help text", function () {
+      responseText.should.contain("my help text");
     });
   });
 });

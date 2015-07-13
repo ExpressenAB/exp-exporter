@@ -195,7 +195,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     {
       namespace: "nodejs",
       name: "nodejs_" + gauges[gaugeKey].name,
-      help: ""
+      help: gauges[gaugeKey].help
     },
     [{
       labels: gauges[gaugeKey].labels,
@@ -213,7 +213,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     {
       namespace: "nodejs",
       name: "nodejs_avg_" + perSecondGauges[gaugeKey].name + "_per_second",
-      help: ""
+      help: perSecondGauges[gaugeKey].help
     },
     [{
       labels: perSecondGauges[gaugeKey].labels,
@@ -231,7 +231,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     {
       namespace: "nodejs",
       name: "nodejs_" + counters[counterKey].name,
-      help: ""
+      help: counters[counterKey].help
     },
     [{
       labels: counters[counterKey].labels,
@@ -245,7 +245,7 @@ function getPrometheusMetrics(gatheredMetrics) {
 //   perSecondGauges[name] = 0;
 // }
 
-function incrementPerSecondGauge(name, labels) {
+function incrementPerSecondGauge(name, labels, help) {
   if (!labels) {
     labels = {};
   }
@@ -257,7 +257,8 @@ function incrementPerSecondGauge(name, labels) {
     perSecondGauges[key] = {
       name: name,
       value: 1,
-      labels: labels
+      labels: labels,
+      help: help
     };
   }
 }
@@ -266,7 +267,7 @@ function incrementPerSecondGauge(name, labels) {
 //   gauges[name] = 0;
 // }
 
-function setGauge(name, value, labels) {
+function setGauge(name, value, labels, help) {
   if (!labels) {
     labels = {};
   }
@@ -278,7 +279,8 @@ function setGauge(name, value, labels) {
     gauges[key] = {
       name: name,
       value: value,
-      labels: labels
+      labels: labels,
+      help: help
     };
   }
 }
@@ -287,7 +289,7 @@ function setGauge(name, value, labels) {
 //   counters[name] = 0;
 // }
 
-function incrementCounter(name, labels) {
+function incrementCounter(name, labels, help) {
   if (!labels) {
     labels = {};
   }
@@ -299,12 +301,13 @@ function incrementCounter(name, labels) {
     counters[key] = {
       name: name,
       value: 1,
-      labels: labels
+      labels: labels,
+      help: help
     };
   }
 }
 
-function setCounter(name, value, labels) {
+function setCounter(name, value, labels, help) {
   if (!labels) {
     labels = {};
   }
@@ -313,7 +316,8 @@ function setCounter(name, value, labels) {
   counters[key] = {
     name: name,
     value: value,
-    labels: labels
+    labels: labels,
+    help: help
   };
 }
 

@@ -18,6 +18,7 @@ var emitter;
 var logger;
 var gauges = {};
 var perSecondGauges = {};
+var counters = {};
 
 function init(options) {
   logger = options.logger || dummyLogger();
@@ -118,6 +119,11 @@ function writeMetrics() {
     perSecondGaugesKeys.forEach(function (gaugeKey) {
       metrics[gaugeKey + "PerSecond"] = perSecondGauges[gaugeKey] * 1000 / config.writeInterval;
       perSecondGauges[gaugeKey] = 0;
+    });
+
+    var counterKeys = _.keys(counters);
+    counterKeys.forEach(function (counterKey) {
+      metrics[counterKey] = counters[counterKey];
     });
     fs.writeFile(getPath() + filePrefix() + process.pid, JSON.stringify(metrics), function (err) {
       if (err) {
@@ -229,6 +235,24 @@ function getPrometheusMetrics(gatheredMetrics) {
       value: totalPerSecond
     }]));
   });
+
+  var counterKeys = _.keys(counters);
+  counterKeys.forEach(function (counterKey) {
+    var perWorker = gatheredMetrics.map(function (workerMetrics) {
+      return workerMetrics[counterKey];
+    });
+    var total = _.sum(perWorker);
+    promMetrics.push(prometheusResponse.gauge(
+    {
+      namespace: "nodejs",
+      name: "nodejs_" + counterKey,
+      help: ""
+    },
+    [{
+      labels: {app: config.appName},
+      value: total
+    }]));
+  });
   return promMetrics;
 }
 
@@ -248,11 +272,26 @@ function setGauge(name, value) {
   gauges[name] = value;
 }
 
+function counter(name) {
+  counters[name] = 0;
+}
+
+function incrementCounter(name) {
+  counters[name]++;
+}
+
+function setCounter(name, value) {
+  counters[name] = value;
+}
+
 module.exports = {
   init: init,
   unInit: unInit,
   perSecondGauge: perSecondGauge,
   incrementPerSecondGauge: incrementPerSecondGauge,
   gauge: gauge,
-  setGauge: setGauge
+  setGauge: setGauge,
+  counter: counter,
+  incrementCounter: incrementCounter,
+  setCounter: setCounter
 };

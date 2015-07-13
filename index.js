@@ -54,8 +54,8 @@ function init(options) {
     server = options.expressApp.listen(options.port);
   }
   options.expressApp.use(function (req, res, next) {
-    incrementCounter("http_requests");
-    incrementPerSecondGauge("http_requests");
+    incrementCounter("http_requests", null, "Total number of HTTP requests handled");
+    incrementPerSecondGauge("http_requests", null, "Number of HTTP requests handles per second");
     next();
   });
   options.expressApp.get("/_metrics", gatherMetrics);
@@ -99,8 +99,8 @@ function writeMetrics() {
   //Write metrics from this process to file
   logger.info("exp-exporter writing metrics");
   usage.lookup(process.pid, { keepHistory: true }, function (err, result) {
-    setGauge("avg_cpu_usage_per_worker", result.cpu);
-    setGauge("avg_mem_usage_per_worker", result.memory);
+    setGauge("avg_cpu_usage_per_worker", result.cpu, null, "Average CPU usage per process");
+    setGauge("avg_mem_usage_per_worker", result.memory, null, "Average memory usage per process");
     var metrics = {
       workerPid: process.pid,
       timestamp: new Date().getTime()

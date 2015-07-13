@@ -16,6 +16,7 @@ var initTime;
 var numRequestsServedByProcess = 0;
 var emitter;
 var logger;
+var gauges = {};
 var perSecondGauges = {};
 
 function init(options) {
@@ -103,6 +104,12 @@ function writeMetrics() {
       memoryUsage: result.memory,
       totalHttpRequestsServed: numRequestsServedByProcess,
     };
+
+    var gaugeKeys = _.keys(gauges);
+    gaugeKeys.forEach(function (gaugeKey) {
+      metrics[gaugeKey] = gauges[gaugeKey];
+    });
+
     var perSecondGaugesKeys = _.keys(perSecondGauges);
     perSecondGaugesKeys.forEach(function (gaugeKey) {
       metrics[gaugeKey + "PerSecond"] = perSecondGauges[gaugeKey] * 1000 / config.writeInterval;
@@ -229,6 +236,24 @@ function getPrometheusMetrics(gatheredMetrics) {
     value: totalHttpRequestsPerSecond
   }]));
 
+  var gaugeKeys = _.keys(gauges);
+  gaugeKeys.forEach(function (gaugeKey) {
+    var perWorker = gatheredMetrics.map(function (workerMetrics) {
+      return workerMetrics[gaugeKey];
+    });
+    var avgPerWorker = _.sum(perWorker) / gatheredMetrics.length;
+    promMetrics.push(prometheusResponse.gauge(
+    {
+      namespace: "nodejs",
+      name: "nodejs_" + gaugeKey,
+      help: ""
+    },
+    [{
+      labels: {app: config.appName},
+      value: avgPerWorker
+    }]));
+  });
+
   var perSecondGaugesKeys = _.keys(perSecondGauges);
   perSecondGaugesKeys.forEach(function (gaugeKey) {
     var perSecond = gatheredMetrics.map(function (workerMetrics) {
@@ -256,9 +281,20 @@ function perSecondGauge(name) {
 function incrementPerSecondGauge(name) {
   perSecondGauges[name]++;
 }
+
+function gauge(name) {
+  gauges[name] = 0;
+}
+
+function setGauge(name, value) {
+  gauges[name] = value;
+}
+
 module.exports = {
   init: init,
   unInit: unInit,
   perSecondGauge: perSecondGauge,
-  incrementPerSecondGauge: incrementPerSecondGauge
+  incrementPerSecondGauge: incrementPerSecondGauge,
+  gauge: gauge,
+  setGauge: setGauge
 };

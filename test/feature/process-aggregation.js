@@ -41,7 +41,6 @@ Feature("process aggregation", function () {
       .expect(200)
       .end(function (err, res) {
         responseText = res.text;
-        console.log(res.text);
         if (err) return done(err);
         done();
       });

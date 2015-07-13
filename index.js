@@ -96,6 +96,7 @@ function filePrefix() {
 }
 
 function writeMetrics() {
+  //Write metrics from this process to file
   logger.info("exp-exporter writing metrics");
   usage.lookup(process.pid, { keepHistory: true }, function (err, result) {
     setGauge("avg_cpu_usage_per_worker", result.cpu);
@@ -107,12 +108,12 @@ function writeMetrics() {
 
     var gaugeKeys = _.keys(gauges);
     gaugeKeys.forEach(function (gaugeKey) {
-      metrics[gaugeKey] = gauges[gaugeKey];
+      metrics[gaugeKey] = gauges[gaugeKey].value;
     });
 
     var perSecondGaugesKeys = _.keys(perSecondGauges);
     perSecondGaugesKeys.forEach(function (gaugeKey) {
-      metrics[gaugeKey + "PerSecond"] = perSecondGauges[gaugeKey].value * 1000 / config.writeInterval;
+      metrics[gaugeKey] = perSecondGauges[gaugeKey].value * 1000 / config.writeInterval;
       perSecondGauges[gaugeKey].value = 0;
     });
 
@@ -130,6 +131,7 @@ function writeMetrics() {
 }
 
 function gatherMetrics(req, res) {
+  //Locate files written by processes and respond with combined metrics
   var gatheredMetrics = [];
   fs.readdir(getPath(), function (err, files) {
     files = _.filter(files, function (file) {
@@ -167,6 +169,8 @@ function gatherMetrics(req, res) {
 }
 
 function getPrometheusMetrics(gatheredMetrics) {
+  //Extracts and joins metrics from files written by all processes
+
   var promMetrics = [];
   promMetrics.push(prometheusResponse.gauge(
   {
@@ -182,7 +186,7 @@ function getPrometheusMetrics(gatheredMetrics) {
   var gaugeKeys = _.keys(gauges);
   gaugeKeys.forEach(function (gaugeKey) {
     var perWorker = gatheredMetrics.map(function (workerMetrics) {
-      return workerMetrics[gaugeKey].value; //TODO: Handle workerMetrics[gaugeKey] === undefined
+      return workerMetrics[gaugeKey];
     });
     var avgPerWorker = _.sum(perWorker) / gatheredMetrics.length;
     promMetrics.push(prometheusResponse.gauge(
@@ -200,7 +204,7 @@ function getPrometheusMetrics(gatheredMetrics) {
   var perSecondGaugesKeys = _.keys(perSecondGauges);
   perSecondGaugesKeys.forEach(function (gaugeKey) {
     var perSecond = gatheredMetrics.map(function (workerMetrics) {
-      return workerMetrics[gaugeKey + "PerSecond"]; //TODO: Handle workerMetrics[gaugeKey] === undefined
+      return workerMetrics[gaugeKey]; //TODO: Handle workerMetrics[gaugeKey] === undefined
     });
     var totalPerSecond = _.sum(perSecond);
     promMetrics.push(prometheusResponse.gauge(
@@ -218,7 +222,7 @@ function getPrometheusMetrics(gatheredMetrics) {
   var counterKeys = _.keys(counters);
   counterKeys.forEach(function (counterKey) {
     var perWorker = gatheredMetrics.map(function (workerMetrics) {
-      return workerMetrics[counterKey]; //TODO: Handle workerMetrics[counterKey] === undefined
+      return workerMetrics[counterKey];
     });
     var total = _.sum(perWorker);
     promMetrics.push(prometheusResponse.gauge(
@@ -240,7 +244,7 @@ function incrementPerSecondGauge(name, labels, help) {
     labels = {};
   }
   labels = _.defaults(labels, config.globalLabels);
-  var key = metricKey(name, labels);
+  var key = metricKey(name + "PerSecond", labels);
   if (perSecondGauges[key]) {
     perSecondGauges[key].value++;
   } else {

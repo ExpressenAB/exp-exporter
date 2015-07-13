@@ -32,6 +32,7 @@ function init(options) {
     writeInterval: 10000,
     basePath: "/tmp/"
   });
+  options.globalLabels = {app: options.appName};
   config = options;
   emitter = new events.EventEmitter();
   try {
@@ -117,8 +118,8 @@ function writeMetrics() {
 
     var perSecondGaugesKeys = _.keys(perSecondGauges);
     perSecondGaugesKeys.forEach(function (gaugeKey) {
-      metrics[gaugeKey + "PerSecond"] = perSecondGauges[gaugeKey] * 1000 / config.writeInterval;
-      perSecondGauges[gaugeKey] = 0;
+      metrics[gaugeKey + "PerSecond"] = perSecondGauges[gaugeKey].value * 1000 / config.writeInterval;
+      perSecondGauges[gaugeKey].value = 0;
     });
 
     var counterKeys = _.keys(counters);
@@ -187,17 +188,17 @@ function getPrometheusMetrics(gatheredMetrics) {
   var gaugeKeys = _.keys(gauges);
   gaugeKeys.forEach(function (gaugeKey) {
     var perWorker = gatheredMetrics.map(function (workerMetrics) {
-      return workerMetrics[gaugeKey];
+      return workerMetrics[gaugeKey].value;
     });
     var avgPerWorker = _.sum(perWorker) / gatheredMetrics.length;
     promMetrics.push(prometheusResponse.gauge(
     {
       namespace: "nodejs",
-      name: "nodejs_" + gaugeKey,
+      name: "nodejs_" + gauges[gaugeKey].name,
       help: ""
     },
     [{
-      labels: {app: config.appName},
+      labels: gauges[gaugeKey].labels,
       value: avgPerWorker
     }]));
   });
@@ -211,11 +212,11 @@ function getPrometheusMetrics(gatheredMetrics) {
     promMetrics.push(prometheusResponse.gauge(
     {
       namespace: "nodejs",
-      name: "nodejs_avg_" + gaugeKey + "_per_second",
+      name: "nodejs_avg_" + perSecondGauges[gaugeKey].name + "_per_second",
       help: ""
     },
     [{
-      labels: {app: config.appName},
+      labels: perSecondGauges[gaugeKey].labels,
       value: totalPerSecond
     }]));
   });
@@ -244,11 +245,20 @@ function getPrometheusMetrics(gatheredMetrics) {
 //   perSecondGauges[name] = 0;
 // }
 
-function incrementPerSecondGauge(name) {
-  if (perSecondGauges[name]) {
-    perSecondGauges[name]++;
+function incrementPerSecondGauge(name, labels) {
+  if (!labels) {
+    labels = {};
+  }
+  labels = _.defaults(labels, {app: config.appName}); //TODO: Should be config.defaultLabels
+  var key = metricKey(name, labels);
+  if (perSecondGauges[key]) {
+    perSecondGauges[key].value++;
   } else {
-    perSecondGauges[name] = 1;
+    perSecondGauges[key] = {
+      name: name,
+      value: 1,
+      labels: labels
+    };
   }
 }
 
@@ -256,8 +266,21 @@ function incrementPerSecondGauge(name) {
 //   gauges[name] = 0;
 // }
 
-function setGauge(name, value) {
-  gauges[name] = value;
+function setGauge(name, value, labels) {
+  if (!labels) {
+    labels = {};
+  }
+  labels = _.defaults(labels, config.globalLabels);
+  var key = metricKey(name, labels);
+  if (gauges[key]) {
+    gauges[key].value = value;
+  } else {
+    gauges[key] = {
+      name: name,
+      value: value,
+      labels: labels
+    };
+  }
 }
 
 // function counter(name) {
@@ -268,7 +291,7 @@ function incrementCounter(name, labels) {
   if (!labels) {
     labels = {};
   }
-  labels = _.defaults(labels, {app: config.appName});
+  labels = _.defaults(labels, config.globalLabels);
   var key = metricKey(name, labels);
   if (counters[key]) {
     counters[key].value++;
@@ -285,7 +308,7 @@ function setCounter(name, value, labels) {
   if (!labels) {
     labels = {};
   }
-  labels = _.defaults(labels, {app: config.appName});
+  labels = _.defaults(labels, config.globalLabels);
   var key = metricKey(name, labels);
   counters[key] = {
     name: name,

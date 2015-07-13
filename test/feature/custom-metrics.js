@@ -45,6 +45,60 @@ Feature("custom per second gauges", function () {
   });
 });
 
+Feature("custom per second gauges with custom labels", function () {
+  var exporter;
+  Scenario("transactions per second gauge", function () {
+    after(function (done) {
+      require("../../index").unInit();
+      delete require.cache[require.resolve("../../index")];
+      setTimeout(done, 20);
+    });
+    When("exporter has been initialized with writeInterval 100", function (done) {
+      exporter = require("../../index").init({
+        appName: "the-app",
+        writeInterval: 100
+      });
+      exporter.once("metricsWritten", function () { done(); });
+    });
+
+    And("incrementPerSecondGauge('transactions', {success: true}) has been called 10 times", function () {
+      for (var i = 0; i < 10; i++) {
+        require("../../index").incrementPerSecondGauge("transactions", {success: true});
+      }
+    });
+
+    And("incrementPerSecondGauge('transactions', {success: false}) has been called 5 times", function () {
+      for (var i = 0; i < 5; i++) {
+        require("../../index").incrementPerSecondGauge("transactions", {success: false});
+      }
+    });
+
+    And("having waited for 100 milliseconds", function (done) {
+      setTimeout(done, 100);
+    });
+
+    var responseText;
+    And("making a request to the /_metrics endpoint", function (done) {
+      request("http://localhost:9090")
+        .get("/_metrics")
+        .expect(200)
+        .end(function (err, res) {
+          responseText = res.text;
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    Then("it should say that there has been 100 successfull transactions/second", function () {
+      responseText.should.contain("nodejs_avg_transactions_per_second{success=\"true\",app=\"the-app\"} 100");
+    });
+
+    And("it should say that there has been 50 unsuccessfull transactions/second", function () {
+      responseText.should.contain("nodejs_avg_transactions_per_second{success=\"false\",app=\"the-app\"} 50");
+    });
+  });
+});
+
 Feature("custom gagues with setting of value", function () {
   var exporter;
   Scenario("currently logged in users gauge", function () {
@@ -81,6 +135,55 @@ Feature("custom gagues with setting of value", function () {
 
     Then("it should say that there are 4242 logged in users", function () {
       responseText.should.contain("nodejs_logged_in_users{app=\"the-app\"} 4242");
+    });
+  });
+});
+
+Feature("custom gagues with custom labels with setting of value", function () {
+  var exporter;
+  Scenario("currently logged in users gauge", function () {
+    after(function (done) {
+      require("../../index").unInit();
+      delete require.cache[require.resolve("../../index")];
+      setTimeout(done, 20);
+    });
+
+    When("exporter has been initialized", function (done) {
+      exporter = require("../../index").init({
+        appName: "the-app",
+        writeInterval: 100
+      });
+      exporter.once("metricsWritten", function () { done(); });
+    });
+
+    And("setGauge('logged_in_users', 4242, {timespan: 'now'}) has been called", function (done) {
+      require("../../index").setGauge("logged_in_users", 4242, {timespan: "now"});
+      exporter.once("metricsWritten", function () { done(); });
+    });
+
+    And("setGauge('logged_in_users', 4242, {timespan: 'today'}) has been called", function (done) {
+      require("../../index").setGauge("logged_in_users", 12345, {timespan: "today"});
+      exporter.once("metricsWritten", function () { done(); });
+    });
+
+    var responseText;
+    And("making a request to the /_metrics endpoint", function (done) {
+      request("http://localhost:9090")
+        .get("/_metrics")
+        .expect(200)
+        .end(function (err, res) {
+          responseText = res.text;
+          if (err) return done(err);
+          done();
+        });
+    });
+
+    Then("it should say that there are 4242 logged in users now", function () {
+      responseText.should.contain("nodejs_logged_in_users{timespan=\"now\",app=\"the-app\"} 4242");
+    });
+
+    And("it should say that there have been 12345 logged in users today", function () {
+      responseText.should.contain("nodejs_logged_in_users{timespan=\"today\",app=\"the-app\"} 12345");
     });
   });
 });

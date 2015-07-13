@@ -192,7 +192,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     promMetrics.push(prometheusResponse.gauge(
     {
       namespace: "nodejs",
-      name: "nodejs_" + gauges[gaugeKey].name,
+      name: gauges[gaugeKey].name,
       help: gauges[gaugeKey].help
     },
     [{
@@ -210,7 +210,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     promMetrics.push(prometheusResponse.gauge(
     {
       namespace: "nodejs",
-      name: "nodejs_avg_" + perSecondGauges[gaugeKey].name + "_per_second",
+      name: "avg_" + perSecondGauges[gaugeKey].name + "_per_second",
       help: perSecondGauges[gaugeKey].help
     },
     [{
@@ -228,7 +228,7 @@ function getPrometheusMetrics(gatheredMetrics) {
     promMetrics.push(prometheusResponse.gauge(
     {
       namespace: "nodejs",
-      name: "nodejs_" + counters[counterKey].name,
+      name: counters[counterKey].name,
       help: counters[counterKey].help
     },
     [{

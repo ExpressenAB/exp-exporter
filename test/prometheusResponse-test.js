@@ -20,6 +20,13 @@ describe("prometheusResponse", function () {
     });
   });
 
+  describe(".gauge() without help text should return a valid gauge string with empty help", function () {
+    it("should write it as expected", function () {
+      var gauge = prometheusResponse.gauge({namespace: "nodejs", name: "mygauge"}, [{ labels: {app: "applabel"}, value: 10.5 }]);
+      gauge.should.eql("# HELP nodejs_mygauge \n# TYPE nodejs_mygauge gauge\nnodejs_mygauge{app=\"applabel\"} 10.5");
+    });
+  });
+
   describe(".gauge() called with multiple labels for the same value should return a valid gauge string", function () {
     it("should write it as expected", function () {
       var gauge = prometheusResponse.gauge({namespace: "nodejs", name: "mygauge", help: "A great gauge"}, [{ labels: {app: "applabel", mylabel: "first"}, value: 10.5}, { labels: {app: "applabel", mylabel: "second"}, value: 42.4242}]);

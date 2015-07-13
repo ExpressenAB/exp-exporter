@@ -182,7 +182,7 @@ function getPrometheusMetrics(gatheredMetrics) {
   var gaugeKeys = _.keys(gauges);
   gaugeKeys.forEach(function (gaugeKey) {
     var perWorker = gatheredMetrics.map(function (workerMetrics) {
-      return workerMetrics[gaugeKey].value;
+      return workerMetrics[gaugeKey].value; //TODO: Handle workerMetrics[gaugeKey] === undefined
     });
     var avgPerWorker = _.sum(perWorker) / gatheredMetrics.length;
     promMetrics.push(prometheusResponse.gauge(
@@ -200,7 +200,7 @@ function getPrometheusMetrics(gatheredMetrics) {
   var perSecondGaugesKeys = _.keys(perSecondGauges);
   perSecondGaugesKeys.forEach(function (gaugeKey) {
     var perSecond = gatheredMetrics.map(function (workerMetrics) {
-      return workerMetrics[gaugeKey + "PerSecond"];
+      return workerMetrics[gaugeKey + "PerSecond"]; //TODO: Handle workerMetrics[gaugeKey] === undefined
     });
     var totalPerSecond = _.sum(perSecond);
     promMetrics.push(prometheusResponse.gauge(
@@ -218,7 +218,7 @@ function getPrometheusMetrics(gatheredMetrics) {
   var counterKeys = _.keys(counters);
   counterKeys.forEach(function (counterKey) {
     var perWorker = gatheredMetrics.map(function (workerMetrics) {
-      return workerMetrics[counterKey];
+      return workerMetrics[counterKey]; //TODO: Handle workerMetrics[counterKey] === undefined
     });
     var total = _.sum(perWorker);
     promMetrics.push(prometheusResponse.gauge(

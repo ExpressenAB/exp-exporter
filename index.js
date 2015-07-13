@@ -14,9 +14,9 @@ var intervalObj;
 var server;
 var initTime;
 var numRequestsServedByProcess = 0;
-var numRequestsServedSinceLastWrite = 0;
 var emitter;
 var logger;
+var perSecondGauges = {};
 
 function init(options) {
   logger = options.logger || dummyLogger();
@@ -52,10 +52,11 @@ function init(options) {
   }
   options.expressApp.use(function (req, res, next) {
     numRequestsServedByProcess++;
-    numRequestsServedSinceLastWrite++;
+    incrementPerSecondGauge("http_requests");
     next();
   });
   options.expressApp.get("/_metrics", gatherMetrics);
+  perSecondGauge("http_requests");
   intervalObj = setInterval(writeMetrics, options.writeInterval);
   return emitter;
 }
@@ -101,9 +102,12 @@ function writeMetrics() {
       cpuUsage: result.cpu,
       memoryUsage: result.memory,
       totalHttpRequestsServed: numRequestsServedByProcess,
-      httpRequestsServedPerSecond: numRequestsServedSinceLastWrite * 1000 / config.writeInterval
     };
-    numRequestsServedSinceLastWrite = 0;
+    var perSecondGaugesKeys = _.keys(perSecondGauges);
+    perSecondGaugesKeys.forEach(function (gaugeKey) {
+      metrics[gaugeKey + "PerSecond"] = perSecondGauges[gaugeKey] * 1000 / config.writeInterval;
+      perSecondGauges[gaugeKey] = 0;
+    });
     fs.writeFile(getPath() + filePrefix() + process.pid, JSON.stringify(metrics), function (err) {
       if (err) {
         return;
@@ -224,10 +228,37 @@ function getPrometheusMetrics(gatheredMetrics) {
     labels: {app: config.appName},
     value: totalHttpRequestsPerSecond
   }]));
+
+  var perSecondGaugesKeys = _.keys(perSecondGauges);
+  perSecondGaugesKeys.forEach(function (gaugeKey) {
+    var perSecond = gatheredMetrics.map(function (workerMetrics) {
+      return workerMetrics[gaugeKey + "PerSecond"];
+    });
+    var totalPerSecond = _.sum(perSecond);
+    promMetrics.push(prometheusResponse.gauge(
+    {
+      namespace: "nodejs",
+      name: "nodejs_avg_" + gaugeKey + "_per_second",
+      help: ""
+    },
+    [{
+      labels: {app: config.appName},
+      value: totalPerSecond
+    }]));
+  });
   return promMetrics;
 }
 
+function perSecondGauge(name) {
+  perSecondGauges[name] = 0;
+}
+
+function incrementPerSecondGauge(name) {
+  perSecondGauges[name]++;
+}
 module.exports = {
   init: init,
-  unInit: unInit
+  unInit: unInit,
+  perSecondGauge: perSecondGauge,
+  incrementPerSecondGauge: incrementPerSecondGauge
 };

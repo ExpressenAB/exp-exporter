@@ -39,6 +39,11 @@ function init(options) {
     return emitter;
   }
 
+  //Set up default metrics
+  perSecondGauge("http_requests");
+  gauge("avg_cpu_usage_per_worker");
+  gauge("avg_mem_usage_per_worker");
+
   writeMetrics(); //Write a first set of metrics right away before letting setInterval take over
 
   if (!options.expressApp) {
@@ -57,7 +62,7 @@ function init(options) {
     next();
   });
   options.expressApp.get("/_metrics", gatherMetrics);
-  perSecondGauge("http_requests");
+
   intervalObj = setInterval(writeMetrics, options.writeInterval);
   return emitter;
 }
@@ -96,12 +101,11 @@ function filePrefix() {
 function writeMetrics() {
   logger.info("exp-exporter writing metrics");
   usage.lookup(process.pid, { keepHistory: true }, function (err, result) {
-
+    setGauge("avg_cpu_usage_per_worker", result.cpu);
+    setGauge("avg_mem_usage_per_worker", result.memory);
     var metrics = {
       workerPid: process.pid,
       timestamp: new Date().getTime(),
-      cpuUsage: result.cpu,
-      memoryUsage: result.memory,
       totalHttpRequestsServed: numRequestsServedByProcess,
     };
 
@@ -174,37 +178,6 @@ function getPrometheusMetrics(gatheredMetrics) {
     value: gatheredMetrics.length
   }]));
 
-  var cpuUsages = gatheredMetrics.map(function (workerMetrics) {
-    return workerMetrics.cpuUsage;
-  });
-  var avgCpuUsage = _.sum(cpuUsages) / gatheredMetrics.length;
-  avgCpuUsage = Math.round(avgCpuUsage * 1000) / 1000;
-  promMetrics.push(prometheusResponse.gauge(
-  {
-    namespace: "nodejs",
-    name: "avg_cpu_usage_per_worker",
-    help: "Average CPU usage per worker"
-  },
-  [{
-    labels: {app: config.appName},
-    value: avgCpuUsage
-  }]));
-
-  var memoryUsages = gatheredMetrics.map(function (workerMetrics) {
-    return workerMetrics.memoryUsage;
-  });
-  var avgMemoryUsage = _.sum(memoryUsages) / gatheredMetrics.length;
-  promMetrics.push(prometheusResponse.gauge(
-  {
-    namespace: "nodejs",
-    name: "avg_mem_usage_per_worker",
-    help: "Average memory usage per worker"
-  },
-  [{
-    labels: {app: config.appName},
-    value: avgMemoryUsage
-  }]));
-
   var servedHttpRequests = gatheredMetrics.map(function (workerMetrics) {
     return workerMetrics.totalHttpRequestsServed;
   });
@@ -219,21 +192,6 @@ function getPrometheusMetrics(gatheredMetrics) {
   [{
     labels: {app: config.appName},
     value: totalServedHttpRequests
-  }]));
-
-  var perSecondServedHttpRequests = gatheredMetrics.map(function (workerMetrics) {
-    return workerMetrics.httpRequestsServedPerSecond;
-  });
-  var totalHttpRequestsPerSecond = _.sum(perSecondServedHttpRequests);
-  promMetrics.push(prometheusResponse.gauge(
-  {
-    namespace: "nodejs",
-    name: "nodejs_avg_http_requests_per_second",
-    help: "HTTP requests served per second"
-  },
-  [{
-    labels: {app: config.appName},
-    value: totalHttpRequestsPerSecond
   }]));
 
   var gaugeKeys = _.keys(gauges);
